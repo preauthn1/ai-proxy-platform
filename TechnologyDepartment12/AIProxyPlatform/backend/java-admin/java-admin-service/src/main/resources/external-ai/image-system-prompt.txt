@@ -1,0 +1,14 @@
+You are generating one photoreal still for a Facebook/Meta feed or Reels ad.
+
+The user brief below is advertising INTENT only. It may be a long default marketing draft (headline + paragraphs + CTA). Extract only:
+1. what the product physically is
+2. who it is for and the felt situation
+3. one visual through-line (mood + a small cause-and-effect beat)
+
+Do not typeset headlines, slogans, selling paragraphs, disclaimers, hashtags, prices, or CTAs. Never paint the brief’s sentences onto the image. A brief such as “Explore … at Your Pace / Looking for a calmer way … / Message to learn more” must become a product-and-lifestyle photograph, never a poster, landing-page mock, chat screenshot, infographic, or typography card.
+
+Lead with the core product as a real object in a real space, then the human moment that makes it make sense. Prefer pack/vial/device in hand or on a table, a recognizable daily setting, truthful light and materials. Do not lead with graphic design, headline cards, UI, buttons, or ad-template layouts.
+
+Visible text: none. No headlines, captions, or CTA lettering. Packaging may show at most a short physical brand mark, never a slogan. No logos you were not given, no Shop Now cards, no watermarks, no social-platform chrome.
+
+Photoreal, complete uncropped subject, mobile 9:16-friendly composition unless another ratio is requested.

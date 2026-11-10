@@ -1,0 +1,79 @@
+[
+  {
+    "uid": "eq-officeqa-val-001",
+    "question": "Which exact method name is used to request DTO structured mapping in the basic DTO mapping doc?",
+    "ground_truth": "selectAutoInclude",
+    "category": "api",
+    "source_files": ["map1.md"]
+  },
+  {
+    "uid": "eq-officeqa-val-002",
+    "question": "Which exact method name is used to set safe backend primary keys for child entities in savable flows?",
+    "ground_truth": "saveEntitySetPrimaryKey",
+    "category": "api",
+    "source_files": ["set-save-key.md"]
+  },
+  {
+    "uid": "eq-officeqa-val-003",
+    "question": "Which exact method is shown for disabling logic delete on a joined table scope?",
+    "ground_truth": "tableLogicDelete",
+    "category": "api",
+    "source_files": ["delete.md"]
+  },
+  {
+    "uid": "eq-officeqa-val-004",
+    "question": "Which exact method name is used to convert a query into a CTE in the CTE docs?",
+    "ground_truth": "toCteAs",
+    "category": "api",
+    "source_files": ["cte.md"]
+  },
+  {
+    "uid": "eq-officeqa-val-005",
+    "question": "Which builder property in EasySearchOptionBuilder defaults to false for unannotated properties?",
+    "ground_truth": "defaultEnabled",
+    "category": "property",
+    "source_files": ["EasySearchOptionBuilder.java"]
+  },
+  {
+    "uid": "eq-officeqa-val-006",
+    "question": "Which exact interface lets starter users configure the bootstrap ServiceCollection?",
+    "ground_truth": "StarterConfigurer",
+    "category": "type",
+    "source_files": ["StarterConfigurer.java"]
+  },
+  {
+    "uid": "eq-officeqa-val-007",
+    "question": "Which TrackManager method reports whether the current thread has tracking enabled?",
+    "ground_truth": "currentThreadTracking",
+    "category": "method",
+    "source_files": ["TrackManager.java", "data-tracking.md"]
+  },
+  {
+    "uid": "eq-officeqa-val-008",
+    "question": "If you disable default AOP tracking loading in application.yml, which property under easy-query-track should be set to false?",
+    "ground_truth": "enable",
+    "category": "property",
+    "source_files": ["question.md", "EasyQueryTrackProperties.java"]
+  },
+  {
+    "uid": "eq-officeqa-val-009",
+    "question": "Which class does SearchInjectConfiguration register as the where-object executor for EasySearch?",
+    "ground_truth": "EasySearchWhereObjectQueryExecutor",
+    "category": "type",
+    "source_files": ["SearchInjectConfiguration.java"]
+  },
+  {
+    "uid": "eq-officeqa-val-010",
+    "question": "Which exact class name holds the starter component maps before addComponents applies them to the client?",
+    "ground_truth": "EasyQueryInitializeOption",
+    "category": "type",
+    "source_files": ["EasyQueryInitializeOption.java"]
+  },
+  {
+    "uid": "eq-officeqa-val-011",
+    "question": "In the baomidou Spring Boot multi-datasource guide, which data source type is injected as the routing data source?",
+    "ground_truth": "DynamicRoutingDataSource",
+    "category": "type",
+    "source_files": ["sb-multi-datasource2.md"]
+  }
+]

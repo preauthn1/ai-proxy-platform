@@ -1,0 +1,73 @@
+# lefthook configuration
+# 取代 Vite+ 的 `vp config` 安装时注入 hook,改为单一版本受控配置;vue-vben-admin 子模块自带 lefthook.yml。
+# Escape hatch: LEFTHOOK=0 git commit / git commit --no-verify
+# Docs: https://lefthook.dev/configuration/
+#
+# 约定:
+# - 设了 root 后,glob / {staged_files}/{push_files} 都相对 root,不要再写 apps/xxx 前缀。
+# - 会改写文件的任务加 stage_fixed;只读校验不要加。
+# - 同路径上「先改写再校验」必须串行(同一 run 或 piped group),不要与 parallel 竞态。
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: format:staged
+      run: pnpm exec vp staged
+      stage_fixed: true
+
+    - name: cspell:staged
+      glob:
+        - "apps/backend-mock-template/**/*.{ts,tsx}"
+        - "*.md"
+        - "*.yml"
+      # 只扫本次暂存命中文件;--no-must-find-files 避免空列表时 cspell 非 0。
+      run: pnpm exec cspell lint --no-progress --no-must-find-files {staged_files}
+
+    - name: secret-scan
+      # 已安装 gitleaks 时透传退出码;未安装则 skip(exit 0)。exec 避免后续语句盖掉失败码。
+      run: sh -c 'if command -v gitleaks >/dev/null 2>&1; then exec gitleaks protect --staged --redact --no-banner; else echo skip:gitleaks-not-installed; fi'
+
+    - name: java
+      # 一次 Maven 进程串行:语义改写 → Spotless → Checkstyle。
+      # 比拆成 3 个 parallel 命令更稳(无竞态),也少启动 JVM。
+      # rewrite:run 已应用方法引用,无需再 rewrite:dryRun。
+      glob: "backend/java-admin/**/src/{main,test}/java/**/*.java"
+      run: mvn -B -f backend/java-admin/pom.xml rewrite:run spotless:apply checkstyle:check
+      stage_fixed: true
+
+post-merge:
+  jobs:
+    - name: deps:install
+      # lock / 清单任一变更都重装,避免只改 package.json 漏装。
+      glob:
+        - "pnpm-lock.yaml"
+        - "package.json"
+        - "pnpm-workspace.yaml"
+      run: pnpm install --frozen-lockfile=false
+
+# 分支切换: 先串行清理,再异步 vp install(不阻塞 checkout)。
+# git 参数: $1=prev HEAD $2=new HEAD $3=1 分支切换 / 0 文件检出。
+# Escape hatch: LEFTHOOK=0 git switch <branch>
+# 安装日志: .scratch/hooks/vp-install-{root,vben}.log
+post-checkout:
+  jobs:
+    - name: clean:mvn
+      run: mvn -B -q -f backend/java-admin/pom.xml clean
+
+pre-push:
+  parallel: true
+  jobs:
+    - name: check:full
+      # 只读 check;--fix 改 working tree 但不进 commit,留给 pre-commit 的 stage_fixed。
+      run: pnpm exec vp check
+
+    - name: check:java-types
+      # 编译作安全网;WARN 不阻断,ERROR 阻断。
+      glob: "backend/java-admin/**/src/{main,test}/java/**/*.java"
+      run: mvn -B -q -f backend/java-admin/pom.xml -DskipTests compile
+
+commit-msg:
+  jobs:
+    - name: commitlint
+      # vue-vben-admin 子目录 commit 时走自己的 .commitlintrc.js,根 commit 走 @commitlint/config-conventional。
+      run: pnpm exec commitlint --edit "$1"

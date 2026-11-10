@@ -1,0 +1,324 @@
+[
+  {
+    "uid": "eq-officeqa-001",
+    "question": "Which annotation name is used for entity-side conditional navigation gating in easy-query 3.2.13?",
+    "ground_truth": "@IncludeOnProperty",
+    "category": "annotation",
+    "source_files": ["IncludeOnProperty.java"]
+  },
+  {
+    "uid": "eq-officeqa-002",
+    "question": "Which annotation property on IncludeOnProperty defaults to false for null matching?",
+    "ground_truth": "matchNull",
+    "category": "property",
+    "source_files": ["IncludeOnProperty.java"]
+  },
+  {
+    "uid": "eq-officeqa-003",
+    "question": "Which exact API should be used for DTO structured return mapping in easy-query DTO query docs?",
+    "ground_truth": "selectAutoInclude",
+    "category": "api",
+    "source_files": ["readme.md", "map1.md"]
+  },
+  {
+    "uid": "eq-officeqa-004",
+    "question": "Which include API replaced the old two-parameter include form for complex structured include handling?",
+    "ground_truth": "include2",
+    "category": "api",
+    "source_files": ["feature.md"]
+  },
+  {
+    "uid": "eq-officeqa-005",
+    "question": "Which exact API call is shown for using raw SQL as a derived table and then continuing with easy-query paging?",
+    "ground_truth": "queryable(rawSql, Entity.class, params)",
+    "category": "entrypoint",
+    "source_files": ["native-sql.md"]
+  },
+  {
+    "uid": "eq-officeqa-006",
+    "question": "Which native SQL fragment API is the execution-style form that auto-executes for where or orderBy usage?",
+    "ground_truth": "rawSQLCommand",
+    "category": "api",
+    "source_files": ["native-sql.md"]
+  },
+  {
+    "uid": "eq-officeqa-007",
+    "question": "Which native SQL fragment API returns a typed SQL fragment that may still need executeSQL in predicate contexts?",
+    "ground_truth": "rawSQLStatement",
+    "category": "api",
+    "source_files": ["native-sql.md"]
+  },
+  {
+    "uid": "eq-officeqa-008",
+    "question": "Which DTO-query method is listed together with whereObject and orderByObject in the DTO query overview?",
+    "ground_truth": "selectAutoInclude",
+    "category": "api",
+    "source_files": ["readme.md"]
+  },
+  {
+    "uid": "eq-officeqa-009",
+    "question": "Which API should be used to update selected columns on an entity object update according to the update docs?",
+    "ground_truth": "setColumns",
+    "category": "api",
+    "source_files": ["update.md"]
+  },
+  {
+    "uid": "eq-officeqa-010",
+    "question": "Which API should be used to specify the original columns that form the update condition for object-driven update?",
+    "ground_truth": "whereColumns",
+    "category": "api",
+    "source_files": ["update.md"]
+  },
+  {
+    "uid": "eq-officeqa-011",
+    "question": "Which method disables logic delete on a query or delete chain?",
+    "ground_truth": "disableLogicDelete",
+    "category": "api",
+    "source_files": ["delete.md"]
+  },
+  {
+    "uid": "eq-officeqa-012",
+    "question": "Which method must be combined with disableLogicDelete to allow a real DELETE statement?",
+    "ground_truth": "allowDeleteStatement(true)",
+    "category": "api",
+    "source_files": ["delete.md"]
+  },
+  {
+    "uid": "eq-officeqa-013",
+    "question": "Which method is used when only the joined table should ignore logic-delete filtering?",
+    "ground_truth": "tableLogicDelete",
+    "category": "api",
+    "source_files": ["delete.md"]
+  },
+  {
+    "uid": "eq-officeqa-014",
+    "question": "Which Java interface is used when the application must generate the primary key before insert SQL executes?",
+    "ground_truth": "PrimaryKeyGenerator",
+    "category": "type",
+    "source_files": ["PrimaryKeyGenerator.java"]
+  },
+  {
+    "uid": "eq-officeqa-015",
+    "question": "Which method on PrimaryKeyGenerator returns the generated key value itself?",
+    "ground_truth": "getPrimaryKey",
+    "category": "method",
+    "source_files": ["PrimaryKeyGenerator.java"]
+  },
+  {
+    "uid": "eq-officeqa-016",
+    "question": "Which API is used in savable flows to replace unsafe frontend child ids with backend-generated ones?",
+    "ground_truth": "saveEntitySetPrimaryKey",
+    "category": "api",
+    "source_files": ["set-save-key.md"]
+  },
+  {
+    "uid": "eq-officeqa-017",
+    "question": "Which interceptor interface should be used for cross-cutting where predicates such as tenant or data permission filters?",
+    "ground_truth": "PredicateFilterInterceptor",
+    "category": "type",
+    "source_files": ["PredicateFilterInterceptor.java"]
+  },
+  {
+    "uid": "eq-officeqa-018",
+    "question": "Which interceptor interface should be used for automatically appending set columns during expression update?",
+    "ground_truth": "UpdateSetInterceptor",
+    "category": "type",
+    "source_files": ["UpdateSetInterceptor.java"]
+  },
+  {
+    "uid": "eq-officeqa-019",
+    "question": "Which converter interface controls SQL-side select, property, and value conversion for a computed property?",
+    "ground_truth": "ColumnValueSQLConverter",
+    "category": "type",
+    "source_files": ["ColumnValueSQLConverter.java"]
+  },
+  {
+    "uid": "eq-officeqa-020",
+    "question": "Which method on ColumnValueSQLConverter rewrites how a property participates when used in predicates or updates?",
+    "ground_truth": "propertyColumnConvert",
+    "category": "method",
+    "source_files": ["ColumnValueSQLConverter.java"]
+  },
+  {
+    "uid": "eq-officeqa-021",
+    "question": "Which interface applies the same value conversion automatically across matching properties?",
+    "ground_truth": "ValueAutoConverter",
+    "category": "type",
+    "source_files": ["ValueAutoConverter.java"]
+  },
+  {
+    "uid": "eq-officeqa-022",
+    "question": "Which method on ValueAutoConverter decides whether the converter should apply to a property?",
+    "ground_truth": "apply",
+    "category": "method",
+    "source_files": ["ValueAutoConverter.java"]
+  },
+  {
+    "uid": "eq-officeqa-023",
+    "question": "Which interface should be used when the real problem is JDBC parameter or result binding rather than in-memory value conversion?",
+    "ground_truth": "JdbcTypeHandler",
+    "category": "type",
+    "source_files": ["JdbcTypeHandler.java"]
+  },
+  {
+    "uid": "eq-officeqa-024",
+    "question": "Which method on JdbcTypeHandler writes a JDBC parameter value?",
+    "ground_truth": "setParameter",
+    "category": "method",
+    "source_files": ["JdbcTypeHandler.java"]
+  },
+  {
+    "uid": "eq-officeqa-025",
+    "question": "Which API converts relation subqueries into an implicit group-join for high-efficiency analytics?",
+    "ground_truth": "subQueryToGroupJoin",
+    "category": "api",
+    "source_files": ["group.md"]
+  },
+  {
+    "uid": "eq-officeqa-026",
+    "question": "Which lightweight tuple construction API is shown in analytics docs for ad hoc grouped results?",
+    "ground_truth": "Select.DRAFT.of",
+    "category": "api",
+    "source_files": ["group.md"]
+  },
+  {
+    "uid": "eq-officeqa-027",
+    "question": "Which API turns a previous query expression into a reusable CTE?",
+    "ground_truth": "toCteAs",
+    "category": "api",
+    "source_files": ["cte.md"]
+  },
+  {
+    "uid": "eq-officeqa-028",
+    "question": "Which window function API is shown for partitioned row numbering in the CTE docs?",
+    "ground_truth": "rowNumberOver",
+    "category": "api",
+    "source_files": ["cte.md"]
+  },
+  {
+    "uid": "eq-officeqa-029",
+    "question": "Which Spring Boot configuration property class is bound to the prefix easy-query-track?",
+    "ground_truth": "EasyQueryTrackProperties",
+    "category": "type",
+    "source_files": ["EasyQueryTrackProperties.java"]
+  },
+  {
+    "uid": "eq-officeqa-030",
+    "question": "Which property on EasyQueryTrackProperties defaults to true?",
+    "ground_truth": "enable",
+    "category": "property",
+    "source_files": ["EasyQueryTrackProperties.java"]
+  },
+  {
+    "uid": "eq-officeqa-031",
+    "question": "Which Spring Boot property class contains the build flag for default EasyQueryClient creation?",
+    "ground_truth": "EasyQueryProperties",
+    "category": "type",
+    "source_files": ["EasyQueryProperties.java"]
+  },
+  {
+    "uid": "eq-officeqa-032",
+    "question": "Which EasyQueryProperties field defaults to true and controls whether the default build step is enabled?",
+    "ground_truth": "build",
+    "category": "property",
+    "source_files": ["EasyQueryProperties.java"]
+  },
+  {
+    "uid": "eq-officeqa-033",
+    "question": "Which builder property in EasySearchOptionBuilder defaults to false for unannotated properties?",
+    "ground_truth": "defaultEnabled",
+    "category": "property",
+    "source_files": ["EasySearchOptionBuilder.java"]
+  },
+  {
+    "uid": "eq-officeqa-034",
+    "question": "Which builder method on EasySearchOptionBuilder changes the sort parameter name?",
+    "ground_truth": "setSortParam",
+    "category": "method",
+    "source_files": ["EasySearchOptionBuilder.java"]
+  },
+  {
+    "uid": "eq-officeqa-035",
+    "question": "Which builder property in EasySearchOptionBuilder defaults to the pipe character for condition grouping?",
+    "ground_truth": "groupSplitter",
+    "category": "property",
+    "source_files": ["EasySearchOptionBuilder.java"]
+  },
+  {
+    "uid": "eq-officeqa-036",
+    "question": "Which annotation is used on fields or types to declare EasySearch query metadata?",
+    "ground_truth": "@EasyCond",
+    "category": "annotation",
+    "source_files": ["EasyCond.java"]
+  },
+  {
+    "uid": "eq-officeqa-037",
+    "question": "Which EasyCond property maps a search field to a different request parameter name?",
+    "ground_truth": "name",
+    "category": "property",
+    "source_files": ["EasyCond.java"]
+  },
+  {
+    "uid": "eq-officeqa-038",
+    "question": "Which EasyCond property restricts allowed query operators for a field?",
+    "ground_truth": "condOnly",
+    "category": "property",
+    "source_files": ["EasyCond.java"]
+  },
+  {
+    "uid": "eq-officeqa-039",
+    "question": "Which EasyCond property restricts allowed sort directions for a field?",
+    "ground_truth": "sortOnly",
+    "category": "property",
+    "source_files": ["EasyCond.java"]
+  },
+  {
+    "uid": "eq-officeqa-040",
+    "question": "Which TrackManager method reports whether the current thread has tracking enabled?",
+    "ground_truth": "currentThreadTracking",
+    "category": "method",
+    "source_files": ["TrackManager.java", "data-tracking.md"]
+  },
+  {
+    "uid": "eq-officeqa-041",
+    "question": "Which method on TrackManager returns the current thread tracking context?",
+    "ground_truth": "getCurrentTrackContext",
+    "category": "method",
+    "source_files": ["TrackManager.java", "data-tracking.md"]
+  },
+  {
+    "uid": "eq-officeqa-042",
+    "question": "Which exact interface lets starter users configure the bootstrap ServiceCollection?",
+    "ground_truth": "StarterConfigurer",
+    "category": "type",
+    "source_files": ["StarterConfigurer.java"]
+  },
+  {
+    "uid": "eq-officeqa-043",
+    "question": "Which initialization option container aggregates starter-discovered interceptors, converters, routes, and generators before addComponents runs?",
+    "ground_truth": "EasyQueryInitializeOption",
+    "category": "type",
+    "source_files": ["EasyQueryInitializeOption.java"]
+  },
+  {
+    "uid": "eq-officeqa-044",
+    "question": "Which class does SearchInjectConfiguration register as the where-object executor for EasySearch?",
+    "ground_truth": "EasySearchWhereObjectQueryExecutor",
+    "category": "type",
+    "source_files": ["SearchInjectConfiguration.java"]
+  },
+  {
+    "uid": "eq-officeqa-045",
+    "question": "Which class does SearchInjectConfiguration register as the object-sort executor for EasySearch?",
+    "ground_truth": "EasySearchObjectSortQueryExecutor",
+    "category": "type",
+    "source_files": ["SearchInjectConfiguration.java"]
+  },
+  {
+    "uid": "eq-officeqa-046",
+    "question": "Which Spring Boot AOP configuration class wraps public @EasyQueryTrack methods?",
+    "ground_truth": "EasyQueryTrackAopConfiguration",
+    "category": "type",
+    "source_files": ["EasyQueryTrackAopConfiguration.java"]
+  }
+]

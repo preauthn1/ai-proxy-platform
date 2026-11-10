@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+<!--
+  Checkstyle suppressions — baseline for the existing 4-module java-admin codebase.
+
+  Why suppress the entire 4 modules now?
+    - The Palantir Baseline ruleset is a high-bar (naming / complexity / style) and was
+      adopted in 2026-06-14 after the existing 36+ Java files were already written.
+    - Bringing all of them up to the new bar in a single PR would create a massive,
+      hard-to-review diff that mixes rule-driven changes with business-logic changes.
+    - We treat these 8 glob patterns as a "grandfather clause": existing code is
+      exempt from the new rules until we incrementally tighten them.
+
+  Path pattern note (Windows / Unix):
+    - Checkstyle matches `files` against the absolute path.
+    - On Windows that path uses backslashes (`\`); on Unix it uses `/`.
+    - Use `[\\/]` between path segments so suppressions apply on both platforms.
+
+  Future files / new modules MUST NOT be added here.
+    - Anything not matching these 8 globs runs against the full Palantir Baseline
+      ruleset by default (severity = error → `mvn verify` will fail on violations).
+    - If a single legacy file needs to be cleaned up, prefer fixing the file and
+      removing its suppress line over adding per-file suppressions.
+-->
+<suppressions>
+    <!-- 现有 4 模块代码基线（首期一次性扫描后归档） -->
+    <suppress files="java-admin-common[\\/]src[\\/]main[\\/]java[\\/].*" checks=".*"/>
+    <suppress files="java-admin-common[\\/]src[\\/]test[\\/]java[\\/].*" checks=".*"/>
+    <suppress files="java-admin-service[\\/]src[\\/]main[\\/]java[\\/].*" checks=".*"/>
+    <suppress files="java-admin-service[\\/]src[\\/]test[\\/]java[\\/].*" checks=".*"/>
+    <suppress files="java-admin-infra[\\/]src[\\/]main[\\/]java[\\/].*" checks=".*"/>
+    <suppress files="java-admin-infra[\\/]src[\\/]test[\\/]java[\\/].*" checks=".*"/>
+    <suppress files="java-admin-api[\\/]src[\\/]main[\\/]java[\\/].*" checks=".*"/>
+    <suppress files="java-admin-api[\\/]src[\\/]test[\\/]java[\\/].*" checks=".*"/>
+    <!-- 未来: 新增模块/文件不进 suppressions, 默认严格过关 -->
+</suppressions>

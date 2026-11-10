@@ -1,0 +1,282 @@
+/**
+ * i18n 导入向导的纯函数工具（Vue 端，与 React 端 import-utils.ts 等价）。
+ * 暂不抽到 packages/utils-template 以避免跨包引用、保持改动局部。
+ */
+
+export type ImportFormat = 'raw' | 'simple';
+
+export interface FlatRow {
+  localeCode: string;
+  key: string;
+  value: string;
+  remark: string;
+  isEnabled: 0 | 1;
+  duplicate: boolean;
+  sourceFile: string;
+}
+
+export interface StagedFile {
+  name: string;
+  file: File;
+  format: ImportFormat;
+  payload: unknown;
+  parseOk: boolean;
+  errorMessage?: string;
+  localeCode: string;
+  prefix: string;
+  payloadLocale?: {
+    code: string;
+    isDefault: 0 | 1;
+    isEnabled: 0 | 1;
+    name: string;
+    remark: string;
+    sort: number;
+  };
+}
+
+/** 预览 Table 行（每条 FlatRow 一行，不再折叠重复） */
+export interface PreviewRow {
+  /** 操作类型：create 新增 / update 修改 / unchanged 与现状一致（每行独立按 value 与现状对比） */
+  op: 'create' | 'unchanged' | 'update';
+  localeCode: string;
+  key: string;
+  oldValue?: string;
+  oldIsEnabled?: 0 | 1;
+  newValue: string;
+  remark: string;
+  sourceFile: string;
+  /** 该 (localeCode,key) 在 merged 中出现超过 1 次 → 翻译键列的"重复"Tag */
+  duplicate: boolean;
+  /** 该 (localeCode,key) 在 merged 中总出现次数 */
+  occurrenceCount: number;
+  /** 行稳定 key：locale-key-sourceFile-index，供 vxe keyField 使用 */
+  _rowKey: string;
+}
+
+export function unflattenDict(
+  obj: Record<string, unknown>,
+  prefix = '',
+): Array<{ key: string; value: string }> {
+  const out: Array<{ key: string; value: string }> = [];
+  for (const [k, v] of Object.entries(obj)) {
+    if (k === '@type') continue;
+    const next = prefix ? `${prefix}.${k}` : k;
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+      out.push(...unflattenDict(v as Record<string, unknown>, next));
+    } else if (typeof v === 'string') {
+      out.push({ key: next, value: v });
+    }
+  }
+  return out;
+}
+
+export function normalizePrefix(raw: string | undefined): string {
+  if (!raw) return '';
+  return raw.replaceAll(/^\.+|\.+$/g, '');
+}
+
+export function joinKey(prefix: string, key: string): string {
+  return prefix ? `${prefix}.${key}` : key;
+}
+
+export function stagedToFlatRows(file: StagedFile): FlatRow[] {
+  if (!file.parseOk) return [];
+  const payload = file.payload as null | Record<string, unknown>;
+  if (!payload || typeof payload !== 'object') return [];
+
+  const prefix = normalizePrefix(file.prefix);
+  const rows: FlatRow[] = [];
+
+  if (file.format === 'raw') {
+    const translations = payload.translations;
+    if (!Array.isArray(translations)) return [];
+    for (const t of translations) {
+      const tkObj = t as Record<string, unknown>;
+      if (
+        typeof tkObj.translationKey !== 'string' ||
+        typeof tkObj.value !== 'string'
+      ) {
+        continue;
+      }
+      const tk: string = tkObj.translationKey;
+      const tv: string = tkObj.value;
+      const remark = tkObj.remark as string | undefined;
+      const isEnabled = tkObj.isEnabled as 0 | 1 | undefined;
+      rows.push({
+        localeCode: file.localeCode,
+        key: joinKey(prefix, tk),
+        value: tv,
+        remark: remark ?? '',
+        isEnabled: isEnabled ?? 1,
+        duplicate: false,
+        sourceFile: file.name,
+      });
+    }
+  } else {
+    const flat = unflattenDict(payload);
+    for (const { key, value } of flat) {
+      rows.push({
+        localeCode: file.localeCode,
+        key: joinKey(prefix, key),
+        value,
+        remark: '',
+        isEnabled: 1,
+        duplicate: false,
+        sourceFile: file.name,
+      });
+    }
+  }
+
+  const seen = new Map<string, number>();
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r) continue;
+    const composite = `${r.localeCode} ${r.key}`;
+    if (seen.has(composite)) {
+      const firstIdx = seen.get(composite);
+      if (firstIdx !== undefined) {
+        const first = rows[firstIdx];
+        if (first) {
+          rows[firstIdx] = { ...first, duplicate: true };
+        }
+      }
+    } else {
+      seen.set(composite, i);
+    }
+  }
+  return rows;
+}
+
+export function mergeAllFiles(files: StagedFile[]): FlatRow[] {
+  const all: FlatRow[] = [];
+  for (const f of files) {
+    all.push(...stagedToFlatRows(f));
+  }
+  const seen = new Map<string, number>();
+  for (let i = 0; i < all.length; i++) {
+    const r = all[i];
+    if (!r) continue;
+    const composite = `${r.localeCode} ${r.key}`;
+    if (seen.has(composite)) {
+      const firstIdx = seen.get(composite);
+      if (firstIdx !== undefined) {
+        const first = all[firstIdx];
+        if (first) {
+          all[firstIdx] = { ...first, duplicate: true };
+        }
+      }
+    } else {
+      seen.set(composite, i);
+    }
+  }
+  return all;
+}
+
+export interface CurrentRowLite {
+  localeCode: string;
+  translationKey: string;
+  value: string;
+  isEnabled: 0 | 1;
+}
+
+/**
+ * 把 merged rows + currentRows 现状快照组装成预览 Table 行。
+ * - 每条 FlatRow 产一行，不去重折叠（同 key N 次保留 N 行）。
+ * - op 按该行 value 与现状独立对比：现状不存在→create；同值→unchanged；不同→update。
+ * - duplicate/occurrenceCount 标记该 (localeCode,key) 在 merged 中是否重复出现（用于翻译键列的"重复"Tag）。
+ */
+export function buildPreviewRows(
+  merged: FlatRow[],
+  currentRows: CurrentRowLite[],
+): PreviewRow[] {
+  const currentMap = new Map<string, CurrentRowLite>();
+  for (const c of currentRows) {
+    currentMap.set(`${c.localeCode} ${c.translationKey}`, c);
+  }
+
+  // 同 (localeCode,key) 在 merged 中出现次数
+  const countMap = new Map<string, number>();
+  for (const r of merged) {
+    const composite = `${r.localeCode} ${r.key}`;
+    countMap.set(composite, (countMap.get(composite) ?? 0) + 1);
+  }
+
+  return merged.map((r, i) => {
+    const cur = currentMap.get(`${r.localeCode} ${r.key}`);
+    const occurrenceCount = countMap.get(`${r.localeCode} ${r.key}`) ?? 1;
+    let op: PreviewRow['op'];
+    if (!cur) {
+      op = 'create';
+    } else if (cur.value === r.value) {
+      op = 'unchanged';
+    } else {
+      op = 'update';
+    }
+    return {
+      op,
+      localeCode: r.localeCode,
+      key: r.key,
+      oldValue: cur?.value,
+      oldIsEnabled: cur?.isEnabled,
+      newValue: r.value,
+      remark: r.remark,
+      sourceFile: r.sourceFile,
+      duplicate: occurrenceCount > 1,
+      occurrenceCount,
+      _rowKey: `${r.localeCode}-${r.key}-${r.sourceFile}-${i}`,
+    };
+  });
+}
+
+export interface PreviewStats {
+  total: number;
+  create: number;
+  update: number;
+  duplicate: number;
+  unchanged: number;
+  oldDisabled: number;
+}
+
+/**
+ * 统计预览行：新增 / 修改 / 重复 / 现状禁用 / unchanged。
+ * - create/update/unchanged 按原始 PreviewRow 行数（每条独立 op）。
+ * - duplicate = Σ(group 总次数 - 1)，描述"同 key 多出的条数"。
+ */
+export function previewStats(rows: PreviewRow[]): PreviewStats {
+  const s: PreviewStats = {
+    total: rows.length,
+    create: 0,
+    update: 0,
+    duplicate: 0,
+    unchanged: 0,
+    oldDisabled: 0,
+  };
+  for (const r of rows) {
+    if (r.op === 'create') {
+      s.create++;
+    } else if (r.op === 'update') {
+      s.update++;
+    } else if (r.op === 'unchanged') {
+      s.unchanged++;
+    }
+    if (r.oldIsEnabled === 0) s.oldDisabled++;
+  }
+  // ponytail: 同一 group 的多行共享 occurrenceCount，逐行加 (n-1) 会重复 n 倍；
+  // 改遍历只对每个 group 加一次：用 occurrenceCount 与一个已计数集合去重。
+  const counted = new Set<string>();
+  for (const r of rows) {
+    if (r.duplicate) {
+      const composite = `${r.localeCode} ${r.key}`;
+      if (!counted.has(composite)) {
+        counted.add(composite);
+        s.duplicate += r.occurrenceCount - 1;
+      }
+    }
+  }
+  return s;
+}
+
+/** 仅保留有变更的行（op !== unchanged），用于默认折叠未变更。 */
+export function filterChangedOnly(rows: PreviewRow[]): PreviewRow[] {
+  return rows.filter((r) => r.op !== 'unchanged');
+}

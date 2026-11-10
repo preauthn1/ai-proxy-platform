@@ -1,0 +1,48 @@
+packages:
+  - apps/*
+  # vue-vben-admin is a self-contained monorepo with its own
+  # pnpm-workspace.yaml and pnpm-lock.yaml; exclude it (and its subtree)
+  # from the root workspace so its `catalog:` references resolve against
+  # its own catalog instead of the root's.
+  - "!apps/vue-vben-admin"
+  - "!apps/vue-vben-admin/**"
+  - packages/*
+  - tools/*
+
+catalogMode: prefer
+
+catalog:
+  "@types/node": ^24
+  lefthook: 2.1.9
+  typescript: ^5
+  vite: npm:@voidzero-dev/vite-plus-core@latest
+  vitest: 4.1.9
+  vite-plus: latest
+  "@types/jsonwebtoken": latest
+  h3: latest
+  "@faker-js/faker": latest
+  jsonwebtoken: latest
+  nitropack: latest
+  cspell: latest
+  commitlint: latest
+  "@commitlint/config-conventional": latest
+  altcha-lib: 2.3.1
+overrides:
+  vite: "catalog:"
+  vitest: "catalog:"
+peerDependencyRules:
+  allowAny:
+    - vite
+    - vitest
+  allowedVersions:
+    vite: "*"
+    vitest: "*"
+# Allow lefthook's postinstall script to run so it downloads the platform binary
+# (Windows/macOS/Linux + arch). Without this, pnpm 11+ refuses to run install scripts.
+allowBuilds:
+  "@parcel/watcher": true
+  "@swc/core": true
+  esbuild: true
+  json-editor-vue: true
+  lefthook: true
+  vue-demi: true

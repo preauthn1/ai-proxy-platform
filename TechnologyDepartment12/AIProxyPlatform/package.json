@@ -1,0 +1,26 @@
+{
+  "name": "AIProxyPlatform",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "ready": "vp check && vp run -r test && vp run -r build",
+    "lint:full": "vp check && pnpm -C apps/vue-vben-admin exec eslint",
+    "format:full": "vp check --fix && pnpm -C apps/vue-vben-admin exec eslint --fix",
+    "dev:mock": "vp run backend-mock-template#start",
+    "dev:vadmin": "pnpm -C apps/vue-vben-admin dev:antdv-next",
+    "build:vadmin": "pnpm -C apps/vue-vben-admin build:antdv-next",
+    "build:vadmin:test": "pnpm -C apps/vue-vben-admin build:antdv-next:test"
+  },
+  "devDependencies": {
+    "@commitlint/config-conventional": "catalog:",
+    "commitlint": "catalog:",
+    "cspell": "catalog:",
+    "lefthook": "catalog:",
+    "vite-plus": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "packageManager": "pnpm@11.6.0"
+}

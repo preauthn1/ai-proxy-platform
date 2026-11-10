@@ -1,0 +1,9 @@
+{
+  "title": "日志审计",
+  "loginLog": {
+    "title": "登录日志"
+  },
+  "apiLog": {
+    "title": "API 日志"
+  }
+}

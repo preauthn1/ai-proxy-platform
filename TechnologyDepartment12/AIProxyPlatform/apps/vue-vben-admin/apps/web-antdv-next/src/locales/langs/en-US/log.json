@@ -1,0 +1,9 @@
+{
+  "title": "Log Audit",
+  "loginLog": {
+    "title": "Login Log"
+  },
+  "apiLog": {
+    "title": "API Log"
+  }
+}

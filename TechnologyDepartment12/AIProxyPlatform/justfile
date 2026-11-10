@@ -1,0 +1,121 @@
+# Windows 无 sh 时用 PowerShell 执行 recipe
+set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
+
+# 默认：列出可用命令
+default:
+    @just --list
+
+# 并行安装 monorepo 依赖（根 workspace + 独立子应用）
+[parallel]
+install: _install-root _install-vben
+
+alias i := install
+
+[private]
+_install-root:
+    vp i
+
+[private]
+[working-directory: "apps/vue-vben-admin"]
+_install-vben:
+    vp i
+
+# 全仓清理：node_modules / dist / .turbo / .vite / coverage / target 等
+clean:
+    node scripts/clean.mjs
+
+# ---------- 后台打包（java-admin → deploy/）----------
+# 用法: just build-java
+# 产物: deploy/java-admin-api.jar（*.jar 已在 .gitignore）
+# 部署: 将 jar 放到 deploy/ 后 just deploy-java（见下方）
+build-java:
+    mvn -B -f "{{ justfile_directory() }}/backend/java-admin/pom.xml" -DskipTests package
+    node -e "const fs=require('fs');const path=require('path');const root=process.cwd();const src=path.join(root,'backend','java-admin','java-admin-api','target','java-admin-api.jar');const dst=path.join(root,'deploy','java-admin-api.jar');if(!fs.existsSync(src)){console.error('[ERROR] 构建产物不存在: '+src);process.exit(1);}fs.mkdirSync(path.dirname(dst),{recursive:true});fs.copyFileSync(src,dst);console.log('=== jar → deploy/java-admin-api.jar ===');"
+
+alias bj := build-java
+
+# ---------- 前台打包（vue-vben-admin → deploy/vue/）----------
+# 用法: just build-vue
+# 产物: deploy/vue/（web-antdv-next 的 dist 静态资源）
+# 构建: apps/vue-vben-admin → pnpm build:antdv-next
+build-vue:
+    pnpm -C "{{ justfile_directory() }}/apps/vue-vben-admin" run build:antdv-next
+    node -e "const fs=require('fs');const path=require('path');const root=process.cwd();const src=path.join(root,'apps','vue-vben-admin','apps','web-antdv-next','dist');const dst=path.join(root,'deploy','front');if(!fs.existsSync(src)){console.error('[ERROR] 构建产物不存在: '+src);process.exit(1);}fs.rmSync(dst,{recursive:true,force:true});fs.mkdirSync(path.dirname(dst),{recursive:true});fs.cpSync(src,dst,{recursive:true});console.log('=== dist → deploy/vue/ ===');"
+
+alias bv := build-vue
+
+build-vue-test:
+    pnpm -C "{{ justfile_directory() }}/apps/vue-vben-admin" run build:antdv-next:test
+    node -e "const fs=require('fs');const path=require('path');const root=process.cwd();const src=path.join(root,'apps','vue-vben-admin','apps','web-antdv-next','dist');const dst=path.join(root,'deploy','front');if(!fs.existsSync(src)){console.error('[ERROR] 构建产物不存在: '+src);process.exit(1);}fs.rmSync(dst,{recursive:true,force:true});fs.mkdirSync(path.dirname(dst),{recursive:true});fs.cpSync(src,dst,{recursive:true});console.log('=== dist → deploy/vue/ ===');"
+
+alias bvt := build-vue-test
+
+# ---------- 生产部署（Linux + root，配合 deploy/deploy.sh）----------
+# 用法: sudo just deploy-java [run|restart|stop|status|logs]
+# 环境: ENV_FILE=./deploy/.env.prod（默认）  SKIP_INSTALL=1  FORCE_UNIT=1
+# 前提:
+#   1. 已复制 deploy/.env.prod.example → deploy/.env.prod 并填写实际值
+#   2. 已将 jar 放到 deploy/（just build-java 或手动上传），文件名与 JAR_NAME 一致
+# 流程: 安装 deploy/${JAR_NAME} → APP_HOME → 调用 deploy.sh
+deploy-java cmd="run":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ROOT="{{ justfile_directory() }}"
+    DEPLOY_DIR="$ROOT/deploy"
+    # just 侧加载用本地 env（默认 .env.prod）；source 后文件内 ENV_FILE 可能指向 /etc/...
+    LOCAL_ENV_FILE="${ENV_FILE:-$DEPLOY_DIR/.env.prod}"
+    export FORCE_UNIT="${FORCE_UNIT:-0}"
+
+    if [[ ! -f "$LOCAL_ENV_FILE" ]]; then
+      echo "[ERROR] ENV_FILE 不存在: $LOCAL_ENV_FILE" >&2
+      echo "  请复制 $DEPLOY_DIR/.env.prod.example 到 $DEPLOY_DIR/.env.prod 并填写实际值" >&2
+      exit 1
+    fi
+
+    set -a
+    # shellcheck disable=SC1090
+    source "$LOCAL_ENV_FILE"
+    set +a
+    SERVICE_NAME="${SERVICE_NAME:-java-admin}"
+    JAR_NAME="${JAR_NAME:-java-admin-api.jar}"
+    APP_HOME="${APP_HOME:-/opt/${SERVICE_NAME}}"
+    # systemd / deploy.sh 使用的 env：文件内路径优先，缺省落到 /etc/...
+    SYSTEMD_ENV_FILE="${ENV_FILE:-/etc/${SERVICE_NAME}/${SERVICE_NAME}.env}"
+    # 若文件内写的仍是「加载路径自身」或路径不存在，保证 runtime env 可用
+    if [[ ! -f "$SYSTEMD_ENV_FILE" ]]; then
+      echo "=== install env → $SYSTEMD_ENV_FILE ==="
+      mkdir -p "$(dirname "$SYSTEMD_ENV_FILE")"
+      install -m 600 "$LOCAL_ENV_FILE" "$SYSTEMD_ENV_FILE"
+    fi
+    export ENV_FILE="$SYSTEMD_ENV_FILE"
+    export SERVICE_NAME JAR_NAME APP_HOME
+
+    # status / logs / stop 只读运维，默认不装 jar
+    need_install=1
+    case "{{ cmd }}" in
+      status|logs|stop) need_install=0 ;;
+    esac
+    if [[ "${SKIP_INSTALL:-0}" == "1" ]]; then
+      need_install=0
+    fi
+
+    if [[ "$need_install" == "1" ]]; then
+      if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+        echo "[ERROR] 安装 jar 与 deploy.sh 需要 root，请用: sudo just deploy-java {{ cmd }}" >&2
+        exit 1
+      fi
+      JAR_SRC="$DEPLOY_DIR/$JAR_NAME"
+      if [[ ! -f "$JAR_SRC" ]]; then
+        echo "[ERROR] deploy 目录下找不到 jar: $JAR_SRC" >&2
+        echo "  请先 just build-java，或将 $JAR_NAME 上传到 $DEPLOY_DIR/" >&2
+        exit 1
+      fi
+      echo "=== install jar → ${APP_HOME}/${JAR_NAME} ==="
+      mkdir -p "$APP_HOME"
+      install -m 644 "$JAR_SRC" "${APP_HOME}/${JAR_NAME}"
+    fi
+
+    echo "=== deploy.sh {{ cmd }} ==="
+    exec bash "$DEPLOY_DIR/deploy.sh" "{{ cmd }}"
+
+alias dj := deploy-java

@@ -1,0 +1,24 @@
+_base_: default.yaml
+
+train:
+  num_epochs: 2
+  batch_size: 12
+
+gradient:
+  minibatch_size: 4
+  merge_batch_size: 4
+  analyst_workers: 4
+  max_analyst_rounds: 2
+
+optimizer:
+  learning_rate: 2
+  min_learning_rate: 1
+  slow_update_samples: 6
+
+evaluation:
+  eval_test: false
+
+env:
+  out_root: skillopt/runs/officeqa-mimo-fast
+  max_tool_turns: 12
+  max_completion_tokens: 8000

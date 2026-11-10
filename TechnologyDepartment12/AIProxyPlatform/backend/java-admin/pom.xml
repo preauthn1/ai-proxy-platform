@@ -1,0 +1,544 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.0.7</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.yunpei.proxy</groupId>
+    <artifactId>java-admin-parent</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>java-admin-parent</name>
+    <description>Java Admin Backend - parent reactor</description>
+
+    <modules>
+        <module>java-admin-common</module>
+        <module>java-admin-service</module>
+        <module>java-admin-infra</module>
+        <module>java-admin-api</module>
+    </modules>
+
+    <properties>
+        <java.version>21</java.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- 框架版本 -->
+        <easy-query.version>3.2.12</easy-query.version>
+        <sa-token.version>1.45.0</sa-token.version>
+        <!-- knife4j-next 社区 fork 版本（com.baizhukui 命名空间；Boot 4 专用 starter） -->
+        <knife4j.version>5.2.2</knife4j.version>
+        <mysql.version>9.2.0</mysql.version>
+        <lombok.version>1.18.38</lombok.version>
+        <!-- 10.x/11.x ensureSupported 仅到 MySQL 8.1，连 8.4 会 WARN；12.x 起声明支持到 9.4 -->
+        <flyway.version>12.11.0</flyway.version>
+
+        <!-- jcasbin（授权引擎；2026-07-28 集成） -->
+        <jcasbin.version>1.99.0</jcasbin.version>
+        <jcasbin-jdbc-adapter.version>2.13.0</jcasbin-jdbc-adapter.version>
+
+        <!-- Temporal Java SDK / Spring Boot Starter（2026-07-28 集成；供后续 Workflow 使用） -->
+        <temporal.version>1.37.0</temporal.version>
+
+        <!-- AWS SDK v2（S3 兼容对象存储；与 mini_game_traffic 对齐） -->
+        <aws-sdk.version>2.29.45</aws-sdk.version>
+
+        <!-- ALTCHA 人机校验（官方 Java 库 v2） -->
+        <altcha.version>2.0.3</altcha.version>
+
+        <!-- IP 归属地（3.x 支持 v4/v6 双 xdb，对齐 Go ip2region） -->
+        <ip2region.version>3.3.7</ip2region.version>
+
+        <!-- Java 工具链（2026-06-14 集成） -->
+        <spotless.version>3.6.0</spotless.version>
+        <palantir-java-format.version>2.92.0</palantir-java-format.version>
+
+        <!-- OpenRewrite：语义风格重构（lambda → 方法引用）；与 Spotless/Checkstyle 互补 -->
+        <rewrite-maven-plugin.version>6.45.0</rewrite-maven-plugin.version>
+        <rewrite-static-analysis.version>2.40.0</rewrite-static-analysis.version>
+
+        <!-- Error Prone 2.x（2026-06-15 集成；2.50.0 = 2.x 最新稳定，2026-06-10 发布，需 JDK 21+） -->
+        <errorprone.version>2.50.0</errorprone.version>
+
+        <!-- MapStruct Plus：编译期对象映射（View↔VO / Request→Command） -->
+        <mapstruct-plus.version>1.5.1</mapstruct-plus.version>
+        <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- 项目内 4 模块 -->
+            <dependency>
+                <groupId>com.yunpei.proxy</groupId>
+                <artifactId>java-admin-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.yunpei.proxy</groupId>
+                <artifactId>java-admin-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.yunpei.proxy</groupId>
+                <artifactId>java-admin-infra</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- Easy-Query（Spring Boot 4 专用 starter） -->
+            <dependency>
+                <groupId>com.easy-query</groupId>
+                <artifactId>sql-springboot4-starter</artifactId>
+                <version>${easy-query.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.easy-query</groupId>
+                <artifactId>sql-processor</artifactId>
+                <version>${easy-query.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.easy-query</groupId>
+                <artifactId>sql-mysql</artifactId>
+                <version>${easy-query.version}</version>
+            </dependency>
+
+            <!-- Sa-Token（1.45.0；Spring Boot 4 专用 starter + Redis Template 走 Spring Data Redis） -->
+            <dependency>
+                <groupId>cn.dev33</groupId>
+                <artifactId>sa-token-spring-boot4-starter</artifactId>
+                <version>${sa-token.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.dev33</groupId>
+                <artifactId>sa-token-core</artifactId>
+                <version>${sa-token.version}</version>
+            </dependency>
+            <!-- Sa-Token Redis 持久化：Spring Data Redis + Lettuce -->
+            <dependency>
+                <groupId>cn.dev33</groupId>
+                <artifactId>sa-token-redis-template</artifactId>
+                <version>${sa-token.version}</version>
+            </dependency>
+
+            <!-- Knife4j-next（Spring Boot 4 专用 starter；community fork，com.baizhukui 命名空间） -->
+            <dependency>
+                <groupId>com.baizhukui</groupId>
+                <artifactId>knife4j-openapi3-boot4-spring-boot-starter</artifactId>
+                <version>${knife4j.version}</version>
+            </dependency>
+
+            <!-- Swagger / OpenAPI v3 注解(纯注解 JAR,供 common 在 Result 上加 @Schema 使用)。
+                 版本须与 knife4j-next 5.2.2 传递的 swagger-core/models 2.2.47 对齐,
+                 否则 springdoc 处理 @Schema 时会因缺 Schema$SchemaResolution 抛 NoClassDefFoundError。 -->
+            <dependency>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-annotations-jakarta</artifactId>
+                <version>2.2.47</version>
+            </dependency>
+
+            <!-- ip2region xdb 查询（登录日志 / API 日志地理位置） -->
+            <dependency>
+                <groupId>org.lionsoul</groupId>
+                <artifactId>ip2region</artifactId>
+                <version>${ip2region.version}</version>
+            </dependency>
+
+            <!-- Flyway（覆盖 SB BOM 的 flyway.version；core/mysql 必须同版本，否则 MySQL 支持矩阵不一致） -->
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-core</artifactId>
+                <version>${flyway.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-mysql</artifactId>
+                <version>${flyway.version}</version>
+            </dependency>
+
+            <!-- MySQL 驱动 -->
+            <dependency>
+                <groupId>com.mysql</groupId>
+                <artifactId>mysql-connector-j</artifactId>
+                <version>${mysql.version}</version>
+            </dependency>
+
+            <!-- jcasbin 核心 -->
+            <dependency>
+                <groupId>org.casbin</groupId>
+                <artifactId>jcasbin</artifactId>
+                <version>${jcasbin.version}</version>
+            </dependency>
+            <!-- jcasbin JDBC Adapter（连 MySQL casbin_rule 表） -->
+            <dependency>
+                <groupId>org.casbin</groupId>
+                <artifactId>jdbc-adapter</artifactId>
+                <version>${jcasbin-jdbc-adapter.version}</version>
+                <exclusions>
+                    <!-- 排除 jcasbin 传递依赖（由我们显式 pin 版本） -->
+                    <exclusion>
+                        <groupId>org.casbin</groupId>
+                        <artifactId>jcasbin</artifactId>
+                    </exclusion>
+                    <!-- 排除不需要的 JDBC 驱动（只用 MySQL） -->
+                    <exclusion>
+                        <groupId>com.oracle.database.jdbc</groupId>
+                        <artifactId>ojdbc6</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.postgresql</groupId>
+                        <artifactId>postgresql</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.microsoft.sqlserver</groupId>
+                        <artifactId>mssql-jdbc</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <!-- Temporal Spring Boot Starter（含 temporal-sdk + autoconfigure；官方支持 SB 2/3/4）
+                 自动配置条件：spring.temporal.connection.target 非空，或 test-server.enabled=true。
+                 默认 target 留空 → 不连 Server，避免本地未起 Temporal 时启动失败。 -->
+            <dependency>
+                <groupId>io.temporal</groupId>
+                <artifactId>temporal-spring-boot-starter</artifactId>
+                <version>${temporal.version}</version>
+            </dependency>
+
+            <!-- ALTCHA 官方 Java 库（createChallenge / verifySolution） -->
+            <dependency>
+                <groupId>org.altcha</groupId>
+                <artifactId>altcha</artifactId>
+                <version>${altcha.version}</version>
+            </dependency>
+
+            <!-- MapStruct Plus（Spring Boot starter：注册 Converter + SpringConverterFactory） -->
+            <dependency>
+                <groupId>io.github.linpeilie</groupId>
+                <artifactId>mapstruct-plus-spring-boot-starter</artifactId>
+                <version>${mapstruct-plus.version}</version>
+            </dependency>
+
+            <!-- AWS SDK v2 S3（图片生成落盘；密钥仅环境变量注入） -->
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>s3</artifactId>
+                <version>${aws-sdk.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <!--
+      项目实际依赖(继承给所有子模块)。
+      error_prone_core / error_prone_check_api / error_prone_annotation 三个 jar
+      用 provided 作用域:编译期 javac -classpath 可见,运行 jar 不打包。
+      目的:让 ServiceLoader 在 fork=true 模式下能从 javac -classpath 找到 EP plugin
+      类(同时 annotationProcessorPaths 也放 EP jars,让 transitive 都在 processorpath)。
+    -->
+    <dependencies>
+        <dependency>
+            <groupId>com.google.errorprone</groupId>
+            <artifactId>error_prone_core</artifactId>
+            <version>${errorprone.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.errorprone</groupId>
+            <artifactId>error_prone_check_api</artifactId>
+            <version>${errorprone.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.errorprone</groupId>
+            <artifactId>error_prone_annotation</artifactId>
+            <version>${errorprone.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>${lombok.version}</version>
+                            </path>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok-mapstruct-binding</artifactId>
+                                <version>${lombok-mapstruct-binding.version}</version>
+                            </path>
+                            <path>
+                                <groupId>io.github.linpeilie</groupId>
+                                <artifactId>mapstruct-plus-processor</artifactId>
+                                <version>${mapstruct-plus.version}</version>
+                            </path>
+                            <!-- Easy-Query APT -->
+                            <path>
+                                <groupId>com.easy-query</groupId>
+                                <artifactId>sql-processor</artifactId>
+                                <version>${easy-query.version}</version>
+                            </path>
+                        </annotationProcessorPaths>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <!--
+              maven-compiler-plugin（含 Error Prone 2.50.0，2026-06-15 集成）
+              走 EP 官方 install guide 推荐的 "fork=false + .mvn/jvm.config" 路径:
+              - mvn 与 javac 共享同一 JVM,ServiceLoader 走 plugin classloader 找 EP 类
+              - 10 个 add-exports / 2 个 add-opens 不进 compilerArgs(MCP 3.14.1
+                在 fork 模式下会吞带 J 前缀的 export 旗标);改放进 .mvn/jvm.config,
+                mvn 启动时读取 → 写到 JVM 启动参数 → javac 与 mvn 共用同一 JVM
+                时自然继承
+              - error_prone_core / check_api / annotation 放 plugin 的 dependencies,
+                让 ServiceLoader 找得到
+              与 Spotless(格式) / Checkstyle(命名/复杂度) 形成三层质量门禁。
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <fork>true</fork>
+                    <annotationProcessorPaths>
+                        <!-- 顺序：lombok → lombok-mapstruct-binding → mapstruct-plus → easy-query → Error Prone -->
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok-mapstruct-binding</artifactId>
+                            <version>${lombok-mapstruct-binding.version}</version>
+                        </path>
+                        <path>
+                            <groupId>io.github.linpeilie</groupId>
+                            <artifactId>mapstruct-plus-processor</artifactId>
+                            <version>${mapstruct-plus.version}</version>
+                        </path>
+                        <!-- Easy-Query APT -->
+                        <path>
+                            <groupId>com.easy-query</groupId>
+                            <artifactId>sql-processor</artifactId>
+                            <version>${easy-query.version}</version>
+                        </path>
+                        <!--
+                          Error Prone 注解 + plugin 都进 processorpath。
+                          关键:error_prone_core 必须进 processorpath,它的 transitive
+                          (Guava、protobuf、dataflow 等) 由 MCP 自动拉到 processorpath。
+                          同时 error_prone_core 也走 project <dependencies>(provided 作用域),
+                          让 ServiceLoader 也能从 javac -classpath 找到 ErrorProneJavacPlugin 类。
+                        -->
+                        <path>
+                            <groupId>com.google.errorprone</groupId>
+                            <artifactId>error_prone_annotations</artifactId>
+                            <version>${errorprone.version}</version>
+                        </path>
+                        <path>
+                            <groupId>com.google.errorprone</groupId>
+                            <artifactId>error_prone_core</artifactId>
+                            <version>${errorprone.version}</version>
+                        </path>
+                        <path>
+                            <groupId>com.google.errorprone</groupId>
+                            <artifactId>error_prone_check_api</artifactId>
+                            <version>${errorprone.version}</version>
+                        </path>
+                        <path>
+                            <groupId>com.google.errorprone</groupId>
+                            <artifactId>error_prone_annotation</artifactId>
+                            <version>${errorprone.version}</version>
+                        </path>
+                        <path>
+                            <groupId>io.github.eisop</groupId>
+                            <artifactId>dataflow-errorprone</artifactId>
+                            <version>3.41.0-eisop1</version>
+                        </path>
+                    </annotationProcessorPaths>
+                    <compilerArgs>
+                        <!--
+                          EP 2.50.0 强制旗标:
+                          - XDcompilePolicy=simple / should-stop=ifError=FLOW
+                            EP 拒绝 javac 的 by-todo / INIT 默认策略
+                          - XDaddTypeAnnotationsToSymbol=true
+                            EP 2.50.0 在 JDK 21 上必需(JEP 396 内部 API 调整)
+                          - Xplugin:ErrorProne 启用 javac plugin
+                          10 个 add-exports / 2 个 add-opens 放 .mvn/jvm.config。
+                          jvm.config 只对 mvn 主 JVM 生效;但 MCP 3.11.0 fork=true 模式下
+                          实际看到 [forked debug release 21] —— fork 进程继承 mvn JVM
+                          的 add-exports 是 jvm.config 之外的另一条路;我们靠 project
+                          <dependencies> 让 error_prone_core 在 classpath 上
+                          (ServiceLoader 找得到),add-exports 在 MCP 透传给 forked JVM。
+                        -->
+                        <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
+                        <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
+                        <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED</arg>
+                        <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED</arg>
+                        <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED</arg>
+                        <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED</arg>
+                        <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED</arg>
+                        <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED</arg>
+                        <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>
+                        <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED</arg>
+                        <arg>-XDcompilePolicy=simple</arg>
+                        <arg>--should-stop=ifError=FLOW</arg>
+                        <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
+                        <!-- EP 额外选项必须跟在 -Xplugin:ErrorProne 同一 arg 内；
+                             跳过 APT 生成源（Easy-Query SysUserProxy 等）避免机写 Javadoc 报噪 -->
+                        <arg>-Xplugin:ErrorProne -XepExcludedPaths:.*/target/generated-sources/.*</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+
+            <!-- 导出 ${org.mockito:mockito-core:jar} 等属性，供 surefire javaagent 使用 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Surefire：JDK 21+ 以 Mockito 为正式 javaagent，避免 inline mock 动态 attach 警告 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>-javaagent:${org.mockito:mockito-core:jar} -Xshare:off</argLine>
+                </configuration>
+            </plugin>
+
+            <!-- Spotless: palantir-java-format 自动格式化
+                 通过 `mvn spotless:apply` 全量格式化；
+                 `mvn spotless:check` 仅检查（exit ≠ 0 表示未格式化）。
+                 lefthook pre-commit 也会调 apply 并 re-add。
+                 注意：Spotless 只做格式，不会把 lambda 改成方法引用。 -->
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>${spotless.version}</version>
+                <configuration>
+                    <java>
+                        <palantirJavaFormat>
+                            <version>${palantir-java-format.version}</version>
+                        </palantirJavaFormat>
+                    </java>
+                </configuration>
+            </plugin>
+
+            <!-- OpenRewrite: 语义风格（对齐 IDEA “Lambda can be replaced with method reference”）
+                 Checkstyle/Spotless 均无法做类型感知的方法引用建议；本插件补这一层。
+                 检查：mvn -B -f backend/java-admin/pom.xml rewrite:dryRun
+                 修复：mvn -B -f backend/java-admin/pom.xml rewrite:run
+                 不绑 verify phase，避免拖慢常规 package；由 lefthook / 手工命令触发。
+                 仅激活 ReplaceLambdaWithMethodReference，避免静态分析大礼包噪声。 -->
+            <plugin>
+                <groupId>org.openrewrite.maven</groupId>
+                <artifactId>rewrite-maven-plugin</artifactId>
+                <version>${rewrite-maven-plugin.version}</version>
+                <configuration>
+                    <activeRecipes>
+                        <recipe>org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference</recipe>
+                    </activeRecipes>
+                    <!-- dryRun 发现可改写处时以非 0 退出，便于 pre-push / CI 门禁 -->
+                    <failOnDryRunResults>true</failOnDryRunResults>
+                    <!-- 跳过 APT 生成源（Easy-Query Proxy 等） -->
+                    <exclusions>
+                        <exclusion>**/target/generated-sources/**</exclusion>
+                        <exclusion>**/target/generated-test-sources/**</exclusion>
+                    </exclusions>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.openrewrite.recipe</groupId>
+                        <artifactId>rewrite-static-analysis</artifactId>
+                        <version>${rewrite-static-analysis.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+            <!-- Checkstyle: Palantir 自家规则集（命名 / 复杂度 / 风格规约）
+                 severity = error；绑 verify phase；mvn verify / mvn package 会跑。
+                 lefthook pre-push 也跑 `mvn checkstyle:check`（fast feedback）。
+                 规则集与配置在 build-tools/checkstyle/ 下：
+                   - checkstyle.xml          Palantir Baseline 规则集（gradle-baseline 仓库 raw）
+                   - checkstyle-suppressions.xml   现有 4 模块基线屏蔽
+                   - custom-suppressions.xml       用户自定义（当前为空）
+
+                 版本说明：SB 4.0.7 父 POM 的 pluginManagement 已经锁定了
+                 maven-checkstyle-plugin 3.6.0；此处显式声明版本号只是为了让 Maven
+                 不再 warn "build.plugins.plugin.version is missing"。 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.6.0</version>
+                <configuration>
+                    <configLocation>${maven.multiModuleProjectDirectory}/build-tools/checkstyle/checkstyle.xml</configLocation>
+                    <suppressionsLocation>${maven.multiModuleProjectDirectory}/build-tools/checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
+                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                    <failOnViolation>true</failOnViolation>
+                    <violationSeverity>error</violationSeverity>
+                    <consoleOutput>true</consoleOutput>
+                    <linkXRef>false</linkXRef>
+                    <!--
+                      Skip generated sources (Easy-Query APT output under
+                      target/generated-sources/) — those files are machine-written
+                      and not under our control. Only check hand-written source.
+                    -->
+                    <sourceDirectories>
+                        <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
+                    </sourceDirectories>
+                    <testSourceDirectories>
+                        <testSourceDirectory>${project.basedir}/src/test/java</testSourceDirectory>
+                    </testSourceDirectories>
+                    <!--
+                      `config_loc` is referenced by Palantir's checkstyle.xml
+                      via its built-in SuppressionFilter (reads
+                      ${config_loc}/checkstyle-suppressions.xml and
+                      ${config_loc}/custom-suppressions.xml). The maven-checkstyle-plugin
+                      doesn't set it automatically, so we pass it via the
+                      `propertyExpansion` parameter (which supports Maven
+                      variable interpolation). We use
+                      `${maven.multiModuleProjectDirectory}` (the directory of
+                      the parent POM) so the same config works for both the
+                      parent POM and every child module.
+                    -->
+                    <propertyExpansion>config_loc=${maven.multiModuleProjectDirectory}/build-tools/checkstyle</propertyExpansion>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>checkstyle-verify</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

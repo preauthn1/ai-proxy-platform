@@ -1,0 +1,48 @@
+_base_: ../_base_/default.yaml
+
+model:
+  reasoning_effort: medium
+
+train:
+  batch_size: 24
+  accumulation: 1
+
+gradient:
+  minibatch_size: 6
+  merge_batch_size: 6
+
+optimizer:
+  learning_rate: 3
+
+env:
+  name: officeqa
+  skill_init: SKILL.md
+  split_mode: split_dir
+  split_dir: skillopt/data/officeqa_split
+  data_dirs:
+    - D:/develop/SOURCE_CODE/easy-query/sql-core/src/main/java/com/easy/query/core/annotation
+    - D:/develop/SOURCE_CODE/easy-query/sql-core/src/main/java/com/easy/query/core/basic/extension/conversion
+    - D:/develop/SOURCE_CODE/easy-query/sql-core/src/main/java/com/easy/query/core/basic/extension/generated
+    - D:/develop/SOURCE_CODE/easy-query/sql-core/src/main/java/com/easy/query/core/basic/extension/interceptor
+    - D:/develop/SOURCE_CODE/easy-query/sql-core/src/main/java/com/easy/query/core/basic/extension/track
+    - D:/develop/SOURCE_CODE/easy-query/sql-core/src/main/java/com/easy/query/core/basic/jdbc/types/handler
+    - D:/develop/SOURCE_CODE/easy-query/sql-core/src/main/java/com/easy/query/core/bootstrapper
+    - D:/develop/SOURCE_CODE/easy-query/sql-extension/sql-search/src/main/java/com/easy/query/search
+    - D:/develop/SOURCE_CODE/easy-query/sql-extension/sql-springboot-starter/src/main/java/com/easy/query/sql/starter
+    - D:/develop/SOURCE_CODE/easy-query-doc/src/ability
+    - D:/develop/SOURCE_CODE/easy-query-doc/src/ability/select
+    - D:/develop/SOURCE_CODE/easy-query-doc/src/adv
+    - D:/develop/SOURCE_CODE/easy-query-doc/src/dto-query
+    - D:/develop/SOURCE_CODE/easy-query-doc/src/savable
+    - D:/develop/SOURCE_CODE/easy-query-doc/src
+  workers: 4
+  max_tool_turns: 20
+  max_completion_tokens: 12000
+  search_mode: offline
+  max_queries_per_turn: 4
+  search_api_url: http://apisix.westus2.cloudapp.azure.com/search_tool/search
+  search_auth_env: OFFICEQA_CUSTOM_SEARCH_AUTH
+  search_provider: duckduckgo
+  search_max_num_results: 4
+  search_timeout_seconds: 20
+  limit: 0

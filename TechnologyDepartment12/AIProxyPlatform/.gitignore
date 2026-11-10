@@ -1,0 +1,56 @@
+# Maven
+target/
+*.jar
+*.war
+
+# IDE
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 日志
+logs/
+# 例外:wiki 的 logs/ 目录(pro-workflow 的 maintenance log,需要随仓库提交)
+!.claude/wikis/**/logs/
+*.log
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# Deploy 实际 env（保留 *.example 入库）
+deploy/.env
+deploy/.env.*
+!deploy/.env.*.example
+deploy/deploy.env
+deploy/deploy.env.dev
+deploy/deploy.env.prod
+# 兼容旧单文件名；example 已拆为 dev/prod
+deploy/deploy.env.example
+deploy/front
+# 临时
+*.swp
+*.swo
+*~
+
+node_modules/
+.nitro
+.playwright-mcp
+.understand-anything/intermediate/
+.understand-anything/diff-overlay.json
+.understand-anything/.trash-*/
+.understand-anything/tmp/
+__pycache__
+.output
+# Added by code-review-graph
+.code-review-graph/
+application-dev.yml
+application-test.yml
+application-prod.yml

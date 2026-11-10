@@ -1,0 +1,218 @@
+# Vector：采集 demo 文件日志 → VRL 解析 → VictoriaLogs Elasticsearch bulk
+# 参考：
+#   https://docs.victoriametrics.com/victorialogs/data-ingestion/vector/
+#   https://github.com/VictoriaMetrics/VictoriaLogs/tree/master/deployment/docker/victorialogs/vector
+
+data_dir: /var/lib/vector
+
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
+sources:
+  demo_file:
+    type: file
+    include:
+      - /var/log/app/*.log
+    exclude:
+      - /var/log/app/java-admin*.log
+    read_from: beginning
+    max_line_bytes: 102400
+    ignore_older_secs: 0
+    fingerprint:
+      strategy: device_and_inode
+    multiline:
+      start_pattern: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}'
+      mode: halt_before
+      condition_pattern: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}'
+      timeout_ms: 10000
+
+  # 容器路径，对应宿主机 JAVA_ADMIN_LOG_DIR（默认 /opt/java-admin/logs/java-admin.log）
+  # prod/test 为 Spring Boot Logstash JSON 单行，不再按时间戳拼多行
+  java_admin_file:
+    type: file
+    include:
+      - /var/log/java-admin/java-admin.log
+    read_from: beginning
+    max_line_bytes: 102400
+    ignore_older_secs: 0
+    fingerprint:
+      strategy: device_and_inode
+
+transforms:
+  parse_log:
+    type: remap
+    inputs:
+      - demo_file
+    source: |-
+      .type = "demo.log"
+      .collect_time = format_timestamp!(.timestamp, format: "%Y-%m-%d %H:%M:%S", timezone: "Asia/Shanghai")
+
+      parsed, err = parse_regex(.message, r'(?s)^(?P<log_time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) (?P<level>[A-Z]+) \((?P<thread>[^\)]+)\) \[(?P<position>[^\]]+)\] (?P<content>.*)')
+      if err == null {
+        .log_time = slice!(parsed.log_time, 0, 19)
+        .level = parsed.level
+        .thread = parsed.thread
+        .position = parsed.position
+      } else {
+        .log_time = .collect_time
+        .level = "UNKNOWN"
+        .thread = ""
+        .position = ""
+      }
+
+      host = .host
+      path = .file
+      message = .message
+      ts = .timestamp
+      . = {
+        "timestamp": ts,
+        "log_time": .log_time,
+        "collect_time": .collect_time,
+        "host": host,
+        "path": path,
+        "type": .type,
+        "level": .level,
+        "thread": .thread,
+        "position": .position,
+        "message": message
+      }
+
+  # prod/test logback：Spring Boot StructuredLogEncoder format=logstash
+  # {"@timestamp":"...","message":"...","logger_name":"...","thread_name":"...","level":"INFO",...,"traceId":"...","userId":"...","clientIp":"..."}
+  parse_java_admin:
+    type: remap
+    inputs:
+      - java_admin_file
+    source: |-
+      raw_line = .message
+      .type = "java-admin.log"
+      .collect_time = format_timestamp!(.timestamp, format: "%Y-%m-%d %H:%M:%S", timezone: "Asia/Shanghai")
+      .http = ""
+      .client_ip = ""
+      .raw = raw_line
+
+      parsed, err = parse_json(.message)
+      if err == null {
+        ts = parsed."@timestamp"
+        if ts != null {
+          # @timestamp 形如 2024-01-01T10:15:00.111+08:00 → yyyy-MM-dd HH:mm:ss
+          .log_time = replace(slice!(to_string!(ts), 0, 19), "T", " ")
+        } else {
+          .log_time = .collect_time
+        }
+        .level = to_string(parsed.level) ?? "UNKNOWN"
+        .thread = to_string(parsed.thread_name) ?? ""
+        .position = to_string(parsed.logger_name) ?? ""
+        .trace_id = to_string(parsed.traceId) ?? ""
+        .user_id = to_string(parsed.userId) ?? ""
+        .client_ip = to_string(parsed.clientIp) ?? ""
+        .log_type = to_string(parsed.logType) ?? ""
+        .http = to_string(parsed.http) ?? ""
+        # _msg 只放 log 正文；整行 JSON 放 raw，供 VMUI 展开
+        msg, msg_err = to_string(parsed.message)
+        if msg_err == null && msg != "" {
+          .message = msg
+        } else {
+          .message = ""
+        }
+        stack, stack_err = to_string(parsed.stack_trace)
+        if stack_err == null && stack != "" {
+          if .message == "" {
+            .message = stack
+          } else {
+            .message = to_string!(.message) + "\n" + stack
+          }
+        }
+        .raw = parsed
+      } else {
+        .log_time = .collect_time
+        .level = "UNKNOWN"
+        .thread = ""
+        .position = ""
+        .trace_id = ""
+        .user_id = ""
+        .client_ip = ""
+        .log_type = ""
+      }
+
+      host = .host
+      path = .file
+      message = .message
+      ts = .timestamp
+      . = {
+        "timestamp": ts,
+        "log_time": .log_time,
+        "collect_time": .collect_time,
+        "host": host,
+        "path": path,
+        "type": .type,
+        "level": .level,
+        "thread": .thread,
+        "position": .position,
+        "trace_id": .trace_id,
+        "user_id": .user_id,
+        "client_ip": .client_ip,
+        "log_type": .log_type,
+        "http": .http,
+        "raw": .raw,
+        "message": message
+      }
+
+  # VL 要求每条日志都有非空 _msg。空值视为缺失，见
+  # https://docs.victoriametrics.com/victorialogs/keyconcepts/#message-field
+  # Vector ES sink 的 query 有时带不上，同时写字段 + VL-Msg-Field 头。
+  to_vlogs:
+    type: remap
+    inputs:
+      - parse_log
+      - parse_java_admin
+    source: |-
+      msg, msg_err = to_string(.message)
+      if msg_err != null || msg == "" {
+        msg = "-"
+      }
+      ._msg = msg
+      .message = msg
+
+      host_s, host_err = to_string(.host)
+      if host_err != null {
+        .host = encode_json(.host)
+      } else {
+        .host = host_s
+      }
+
+# 官方首选 Elasticsearch 协议。healthcheck 会打 /_cluster/health，VictoriaLogs 没有该接口，必须关掉。
+sinks:
+  vlogs:
+    type: elasticsearch
+    inputs:
+      - to_vlogs
+    endpoints:
+      - "${VL_ELASTICSEARCH_URL:-http://host.docker.internal:9428/insert/elasticsearch/}"
+    auth:
+      strategy: basic
+      user: "${VL_AUTH_USERNAME:-admin}"
+      REDACTED
+    mode: bulk
+    api_version: v8
+    compression: gzip
+    healthcheck:
+      enabled: false
+    query:
+      _msg_field: message
+      _time_field: timestamp
+      _stream_fields: host,path,type
+      preserve_json_keys: raw
+    request:
+      headers:
+        AccountID: "0"
+        ProjectID: "0"
+        VL-Msg-Field: "_msg,message"
+        VL-Time-Field: "timestamp,@timestamp"
+        VL-Stream-Fields: "host,path,type"
+        VL-Preserve-JSON-Keys: raw
+    batch:
+      max_events: 200
+      timeout_secs: 3
+      max_bytes: 10485760

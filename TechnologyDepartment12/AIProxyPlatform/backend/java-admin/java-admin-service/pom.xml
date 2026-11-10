@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.yunpei.proxy</groupId>
+        <artifactId>java-admin-parent</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>java-admin-service</artifactId>
+    <name>java-admin-service</name>
+    <description>业务模块：实体、Repository、Service</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.yunpei.proxy</groupId>
+            <artifactId>java-admin-common</artifactId>
+        </dependency>
+
+        <!-- Easy-Query -->
+        <dependency>
+            <groupId>com.easy-query</groupId>
+            <artifactId>sql-springboot4-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.easy-query</groupId>
+            <artifactId>sql-mysql</artifactId>
+        </dependency>
+
+        <!-- MySQL 驱动（service 编译期需要，运行时由 api 加载） -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Spring Security Crypto（仅 BCryptPasswordEncoder 做密码哈希；独立模块，不引入 Security 过滤链） -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+        </dependency>
+
+        <!-- ALTCHA 人机校验 -->
+        <dependency>
+            <groupId>org.altcha</groupId>
+            <artifactId>altcha</artifactId>
+        </dependency>
+
+        <!-- IP 归属地（对齐 Go ip2region） -->
+        <dependency>
+            <groupId>org.lionsoul</groupId>
+            <artifactId>ip2region</artifactId>
+        </dependency>
+
+        <!-- Jackson databind：任务 JSON 字段（retryPolicy / summary）序列化 -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <!-- MapStruct Plus：@AutoMapper + Converter（Entity↔View） -->
+        <dependency>
+            <groupId>io.github.linpeilie</groupId>
+            <artifactId>mapstruct-plus-spring-boot-starter</artifactId>
+        </dependency>
+
+        <!-- Test -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

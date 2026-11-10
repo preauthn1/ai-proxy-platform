@@ -1,0 +1,260 @@
+spring:
+  application:
+    name: java-admin
+  profiles:
+    active: dev
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    validate-on-migrate: true
+    clean-disabled: true
+
+  # Temporal（io.temporal:temporal-spring-boot-starter）—— 必要依赖，无本地 mock 回退
+  # 文档：https://docs.temporal.io/develop/java/integrations/spring-boot-integration
+  # 自动配置条件：connection.target 非空 OR test-server.enabled=true
+  # 默认连本地 compose（宿主机 4723→容器 7233）；启动后全量对账 + CRUD 即时同步 Schedule
+  temporal:
+    connection:
+      target: ${TEMPORAL_TARGET:127.0.0.1:4723}
+    namespace: ${TEMPORAL_NAMESPACE:default}
+    # true 时启动 Worker（需 auto-discovery 或显式 workers 配置）
+    start-workers: ${TEMPORAL_START_WORKERS:false}
+    # 发现 @WorkflowImpl 类 + @ActivityImpl Spring Bean（taskQueues 见实现类注解）
+    workers-auto-discovery:
+      workflow-packages:
+        - com.yunpei.proxy.infra.temporal.workflow
+        - com.yunpei.proxy.infra.temporal.workflow.image
+        - com.yunpei.proxy.infra.temporal.workflow.video
+        - com.yunpei.proxy.infra.temporal.workflow.ai
+        - com.yunpei.proxy.infra.temporal.workflow.ad
+      register-activity-beans: true
+    # Worker 优雅停机等待秒数（SmartLifecycle 在 gRPC Channel 关闭前 awaitTermination）
+    # 需 ≤ spring.lifecycle.timeout-per-shutdown-phase（默认 30s）
+    worker:
+      shutdown-await-seconds: ${TEMPORAL_WORKER_SHUTDOWN_AWAIT_SECONDS:30}
+    # 显式 worker：与 workers-auto-discovery 共存；同 task-queue 先建带 capacity 的 worker，再挂 workflow/activity
+    # image-generation 并发由 capacity 控制（多图在单 Activity 内可并行 generate）
+    workers:
+      - task-queue: demo
+        capacity:
+          max-concurrent-activity-executors: 1
+      - task-queue: image-generation
+        capacity:
+          # 进程内同时执行的生图 Activity 上限（≈ 同时在飞的 job 数；单 job 内多图另起虚拟线程）
+          max-concurrent-activity-executors: ${IMAGE_MAX_CONCURRENT_ACTIVITIES:100}
+      - task-queue: video-generation
+        capacity:
+          max-concurrent-activity-executors: ${VIDEO_MAX_CONCURRENT_ACTIVITIES:50}
+      - task-queue: ai-text-generation
+        capacity:
+          max-concurrent-activity-executors: ${AI_TEXT_MAX_CONCURRENT_ACTIVITIES:50}
+      - task-queue: ad-performance-analysis
+        capacity:
+          max-concurrent-activity-executors: ${AD_ANALYSIS_MAX_CONCURRENT_ACTIVITIES:20}
+
+  # SmartLifecycle 停机超时：覆盖 Temporal Worker await，避免相位超时后仍关 Channel
+  lifecycle:
+    timeout-per-shutdown-phase: ${SPRING_LIFECYCLE_TIMEOUT_PER_SHUTDOWN_PHASE:45s}
+
+  main:
+    banner-mode: off
+
+# Sa-Token（Redis 模式：sa-token-redis-template 走 Spring Data Redis + Lettuce）
+# timeout=2592000s=30天；is-share=false 同一账号多端登录各持独立 token
+# token-name=Authorization + token-prefix=Bearer → 与前端/mock 的 Authorization: Bearer <accessToken> 对齐
+sa-token:
+  token-name: Authorization
+  token-prefix: Bearer
+  timeout: 2592000
+  active-timeout: -1
+  is-concurrent: true
+  is-share: false
+  token-style: uuid
+  is-log: false
+  is-print: false # 关闭启动 ASCII banner
+  is-read-cookie: false
+  is-read-header: true
+
+# jcasbin（授权引擎；JDBC Adapter 连 MySQL casbin_rule 表）
+casbin:
+  model: casbin/model.conf
+  table-name: casbin_rule
+  auto-create-table: false
+  remove-policy-failed: false
+
+# ALTCHA 人机校验（与 mock 默认 secret 对齐，便于本地联调）
+altcha:
+  hmac-secret: ${ALTCHA_HMAC_KEY:altcha-dev-hmac-secret}
+  cost: ${ALTCHA_COST:1000}
+  expires-seconds: ${ALTCHA_EXPIRES_SECONDS:600}
+
+# 图片生成 Provider —— 密钥/接入点只写本地 application-dev.yml 或环境变量，禁止提交仓库
+# 本地联调：复制 application-dev.yml.example → application-dev.yml 后填写
+# IMAGE_PROVIDER=placeholder|new2api
+image:
+  provider: ${IMAGE_PROVIDER:placeholder}
+  # edits 上传源图大小上限（字节）
+  upload-max-bytes: ${IMAGE_UPLOAD_MAX_BYTES:10485760}
+  new2api:
+    api-key: ${NEW2API_API_KEY:${IMAGE_API_KEY:}}
+    base-url: ${NEW2API_BASE_URL}
+    model: ${NEW2API_IMAGE_MODEL:image}
+    timeout-seconds: ${NEW2API_IMAGE_TIMEOUT_SECONDS:1800}
+    # 并发上限见 spring.temporal.workers[task-queue=image-generation].capacity
+    # 失败后重试等待秒数：首次立即；失败后依次 sleep 再试
+    retry-delays-seconds:
+      - 1
+      - 2
+      - 5
+    # 有参考图时是否走 /images/edits
+    edit-enabled: ${NEW2API_IMAGE_EDIT_ENABLED:true}
+    edit-path: ${NEW2API_IMAGE_EDIT_PATH:/images/edits}
+    edit-model: ${NEW2API_IMAGE_EDIT_MODEL:}
+
+# LLM Provider —— 密钥/接入点只写本地 application-dev.yml 或环境变量
+# LLM_PROVIDER=mock|openai-compatible|new2api（new2api 与 openai-compatible 等价）
+llm:
+  provider: ${LLM_PROVIDER:mock}
+  openai-compatible:
+    api-key: ${LLM_API_KEY}
+    base-url: ${LLM_BASE_URL}
+    model: ${LLM_MODEL:gpt-4o-mini}
+    timeout-seconds: ${LLM_TIMEOUT_SECONDS:120}
+    retry-delays-seconds:
+      - 1
+      - 2
+      - 5
+# 视频生成 Provider —— 密钥/接入点只写本地 application-dev.yml 或环境变量
+# VIDEO_PROVIDER=placeholder|new2api|cpa
+video:
+  provider: ${VIDEO_PROVIDER:placeholder}
+  poll-interval-seconds: ${VIDEO_POLL_INTERVAL_SECONDS:5}
+  workflow-timeout-seconds: ${VIDEO_WORKFLOW_TIMEOUT_SECONDS:1800}
+  new2api:
+    api-key: ${NEW2API_API_KEY:${VIDEO_API_KEY}}
+    base-url: ${NEW2API_BASE_URL}
+    model: ${NEW2API_VIDEO_MODEL:video}
+    timeout-seconds: ${NEW2API_VIDEO_TIMEOUT_SECONDS:120}
+    retry-delays-seconds:
+      - 1
+      - 2
+      - 5
+  cpa:
+    api-key: ${CPA_API_KEY:${VIDEO_CPA_API_KEY}}
+    base-url: ${CPA_BASE_URL}
+    model: ${CPA_VIDEO_MODEL}
+    timeout-seconds: ${CPA_VIDEO_TIMEOUT_SECONDS:120}
+    retry-delays-seconds:
+      - 1
+      - 2
+      - 5
+
+# OSS / S3 —— 密钥只写本地 application-dev.yml 或环境变量
+oss:
+  enabled: ${OSS_ENABLED:false}
+  endpoint: ${OSS_ENDPOINT}
+  region: ${OSS_REGION:ap-east-1}
+  bucket: ${OSS_BUCKET}
+  access-key: ${OSS_ACCESS_KEY}
+  secret-key: ${OSS_SECRET_KEY}
+  path-style: ${OSS_PATH_STYLE:true}
+  public-base-url: ${OSS_PUBLIC_BASE_URL}
+  key-prefix: ${OSS_KEY_PREFIX:java-admin}
+  download-timeout-seconds: ${OSS_DOWNLOAD_TIMEOUT_SECONDS:60}
+  # none：不带 canned ACL（AWS 禁用对象 ACL 的桶必须用这个）。public-read：先带 ACL，失败后进程内改不带。
+  object-acl: ${OSS_OBJECT_ACL:none}
+
+# 请求安全中间件：Timestamp / Encrypt / Nonce / Sign / Language 独立开关；dev 默认全开
+app:
+  # 平台墙钟（仅 Asia/Shanghai，见 ADR 0004）
+  time:
+    zone: Asia/Shanghai
+  # 外部集成共享密钥（image/video/ai/ad-performance 鉴权）
+  ai-ads:
+    access-token: ${AI_ADS_REDACTED}
+  ad-analysis:
+    public-base-url: ${AD_ANALYSIS_PUBLIC_BASE_URL:}
+  security:
+    timestamp:
+      enabled: ${SECURITY_TIMESTAMP_ENABLED:true}
+      expire-ms: ${SECURITY_TIMESTAMP_EXPIRE_MS:300000}
+    encrypt:
+      enabled: ${SECURITY_ENCRYPT_ENABLED:false}
+    nonce:
+      enabled: ${SECURITY_NONCE_ENABLED:true}
+    sign:
+      enabled: ${SECURITY_SIGN_ENABLED:true}
+    language:
+      enabled: ${SECURITY_LANGUAGE_ENABLED:true}
+    # Encrypt/Sign 安全中间件白名单（免强制加密与独立签名校验）
+    # 含 /webjars/** /swagger-resources/** /csrf，否则 doc.html 加载的静态资源会被拦截
+    whitelist:
+      - /.well-known/**
+      - /api/encrypt/public/key
+      - /api/encrypt/dev/key-pair
+      - /api/encrypt/dev/session-key
+      - /api/altcha/**
+      - /api/public/i18n/**
+      - /doc.html
+      - /doc.html/**
+      - /swagger-ui/**
+      - /swagger-resources/**
+      - /v3/api-docs/**
+      - /webjars/**
+      - /favicon.ico
+      - /csrf
+      - /error
+      - /actuator/**
+      - /api/health/**
+      - /api/v1/integrations/**
+    # Sa-Token 认证拦截器排除路径
+    auth-exclude-paths:
+      - /api/auth/login
+      - /api/auth/logout
+      - /api/altcha/challenge
+      - /api/encrypt/public/key
+      - /api/public/i18n/**
+      - /api/encrypt/dev/key-pair
+      - /api/v1/integrations/**
+    # jcasbin 授权拦截器排除路径（认证排除 + 文档/静态资源）
+    casbin-exclude-paths:
+      - /.well-known/**
+      - /api/auth/login
+      - /api/auth/logout
+      - /api/altcha/challenge
+      - /api/encrypt/public/key
+      - /api/public/i18n/**
+      - /api/encrypt/dev/key-pair
+      - /doc.html
+      - /doc.html/**
+      - /swagger-ui/**
+      - /swagger-resources/**
+      - /v3/api-docs/**
+      - /webjars/**
+      - /favicon.ico
+      - /csrf
+      - /error
+      - /api/v1/integrations/**
+
+# Easy-Query 3.x（SQL-springboot4-starter 适配 SB 4）
+# name-conversion: underlined → entity 字段 userId 自动映射列 user_id
+easy-query:
+  enable: true
+  database: mysql
+  name-conversion: underlined
+  defaultDataSourceMergePoolSize: 16
+
+server:
+  port: ${APP_PORT:4080}
+  servlet:
+    context-path: /
+
+logging:
+  level:
+    root: INFO
+    com.yunpei.proxy: INFO
+    com.yunpei.proxy.infra.temporal.workflow.ExecutionMirrorTickActivitiesImpl: WARN
+    com.yunpei.proxy.infra.temporal.workflow.ExecutionMirrorTickWorkflowImpl: WARN
+    com.easy.query: WARN

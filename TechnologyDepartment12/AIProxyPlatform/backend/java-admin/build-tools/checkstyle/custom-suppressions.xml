@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+<!--
+  Project-specific suppressions that should NOT be touched by any future
+  "baseline-update" automation. We intentionally keep this empty for now:
+  all suppressions live in `checkstyle-suppressions.xml`. Add entries here
+  only when a rule needs to be relaxed on a case-by-case basis (e.g. a
+  generated source file) without re-baselining the rest of the codebase.
+-->
+<suppressions>
+    <!-- intentionally empty -->
+</suppressions>

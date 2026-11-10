@@ -1,0 +1,5 @@
+/.idea/
+__pycache__/
+*.pyc
+skillopt/runs/
+skillopt/notes/tmp_easy_query_skill.md

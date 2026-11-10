@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="false">
+
+    <!--
+        显式注册 Spring Boot 4 的 ColorConverter。
+        SB 4 不再通过 META-INF/services 自动注册 %clr，
+        必须 <conversionRule conversionWord="clr" .../> 显式声明。
+    -->
+    <conversionRule conversionWord="clr"
+                    class="org.springframework.boot.logging.logback.ColorConverter"/>
+
+    <!-- 日志文件名跟当前进程的 spring.application.name，避免 infra 里写死服务名 -->
+    <springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue="app"/>
+
+    <property name="LOG_DIR" value="logs"/>
+    <property name="LOG_FILE" value="${LOG_DIR}/${APP_NAME}.log"/>
+    <property name="LOG_FILE_PATTERN" value="${LOG_DIR}/full/${APP_NAME}.%d{yyyy-MM-dd, Asia/Shanghai}.%i.log"/>
+    <property name="LOG_ERROR_FILE" value="${LOG_DIR}/${APP_NAME}-error.log"/>
+    <property name="LOG_ERROR_FILE_PATTERN" value="${LOG_DIR}/error/${APP_NAME}-error.%d{yyyy-MM-dd, Asia/Shanghai}.%i.log"/>
+    <property name="LOG_WARN_FILE" value="${LOG_DIR}/${APP_NAME}-warn.log"/>
+    <property name="LOG_WARN_FILE_PATTERN" value="${LOG_DIR}/warn/${APP_NAME}-warn.%d{yyyy-MM-dd, Asia/Shanghai}.%i.log"/>
+    <property name="LOG_MAX_FILE_SIZE" value="20MB"/>
+    <property name="LOG_MAX_HISTORY" value="100"/>
+    <property name="LOG_TOTAL_SIZE_CAP" value="10GB"/>
+
+    <!--
+        普通 pattern（仅作后备；prod/test 已改 StructuredLogEncoder JSON）。
+        用 %highlight() 也能上色（logback 内置），但 %clr() 更细（可指定颜色名）。
+        %kvp 输出 fluent addKeyValue，避免控制台只剩 message。
+    -->
+    <property name="LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS, Asia/Shanghai} %-5level [%X{traceId}] [%X{userId}] [%thread] %logger{36} - %msg %kvp%n"/>
+
+    <!--
+        dev 彩色 pattern（用 %clr() + 显式颜色名）：
+        - 级别：%clr(%-5level) — 按 level 自动配色（ERROR=红, WARN=黄, INFO=绿, DEBUG=蓝）
+        - traceId：%clr([%X{traceId}]){magenta}
+        - userId：%clr([%X{userId}]){yellow}（未登录为空 []）
+        - 线程：%clr([%thread]){blue}
+        - logger：%clr(%-40.40logger{39}){cyan}
+        - %kvp：fluent key-value
+    -->
+    <property name="LOG_PATTERN_COLOR"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS, Asia/Shanghai} %clr(%-5level) %clr([%X{traceId}]){magenta} %clr([%X{userId}]){yellow} %clr([%thread]){blue} %clr(%-40.40logger{39}){cyan} - %msg %kvp%n"/>
+
+    <!-- ──────────────────────────────────────────────
+         DEV：彩色控制台
+         ────────────────────────────────────────────── -->
+    <springProfile name="dev">
+        <appender name="STDOUT_COLOR" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>${LOG_PATTERN_COLOR}</pattern>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="STDOUT_COLOR"/>
+        </root>
+    </springProfile>
+
+    <!-- ──────────────────────────────────────────────
+         PROD / TEST：Logstash JSON 控制台 + 全量 / ERROR / WARN 文件滚动
+         自定义 logback-spring.xml 时 logging.structured.format 不会自动生效，
+         必须在此使用 StructuredLogEncoder（SB 4 内置，无需 logstash-logback-encoder）。
+         ────────────────────────────────────────────── -->
+    <springProfile name="prod | test">
+        <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="org.springframework.boot.logging.logback.StructuredLogEncoder">
+                <format>logstash</format>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+        <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOG_FILE}</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${LOG_FILE_PATTERN}</fileNamePattern>
+                <maxFileSize>${LOG_MAX_FILE_SIZE}</maxFileSize>
+                <maxHistory>${LOG_MAX_HISTORY}</maxHistory>
+                <totalSizeCap>${LOG_TOTAL_SIZE_CAP}</totalSizeCap>
+            </rollingPolicy>
+            <encoder class="org.springframework.boot.logging.logback.StructuredLogEncoder">
+                <format>logstash</format>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+        <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOG_ERROR_FILE}</file>
+            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                <level>ERROR</level>
+            </filter>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${LOG_ERROR_FILE_PATTERN}</fileNamePattern>
+                <maxFileSize>${LOG_MAX_FILE_SIZE}</maxFileSize>
+                <maxHistory>${LOG_MAX_HISTORY}</maxHistory>
+                <totalSizeCap>${LOG_TOTAL_SIZE_CAP}</totalSizeCap>
+            </rollingPolicy>
+            <encoder class="org.springframework.boot.logging.logback.StructuredLogEncoder">
+                <format>logstash</format>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+        <appender name="WARN_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOG_WARN_FILE}</file>
+            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                <level>WARN</level>
+            </filter>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${LOG_WARN_FILE_PATTERN}</fileNamePattern>
+                <maxFileSize>${LOG_MAX_FILE_SIZE}</maxFileSize>
+                <maxHistory>${LOG_MAX_HISTORY}</maxHistory>
+                <totalSizeCap>${LOG_TOTAL_SIZE_CAP}</totalSizeCap>
+            </rollingPolicy>
+            <encoder class="org.springframework.boot.logging.logback.StructuredLogEncoder">
+                <format>logstash</format>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="STDOUT"/>
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="ERROR_FILE"/>
+            <appender-ref ref="WARN_FILE"/>
+        </root>
+    </springProfile>
+
+</configuration>

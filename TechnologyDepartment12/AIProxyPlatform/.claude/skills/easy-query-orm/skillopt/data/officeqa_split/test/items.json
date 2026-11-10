@@ -1,0 +1,86 @@
+[
+  {
+    "uid": "eq-officeqa-test-001",
+    "question": "Which exact interface name is used for SQL-side computed property conversion?",
+    "ground_truth": "ColumnValueSQLConverter",
+    "category": "type",
+    "source_files": ["ColumnValueSQLConverter.java"]
+  },
+  {
+    "uid": "eq-officeqa-test-002",
+    "question": "Which exact interface name is used for automatic matching value converters?",
+    "ground_truth": "ValueAutoConverter",
+    "category": "type",
+    "source_files": ["ValueAutoConverter.java"]
+  },
+  {
+    "uid": "eq-officeqa-test-003",
+    "question": "Which exact interface name is used for tenant or permission predicate interception?",
+    "ground_truth": "PredicateFilterInterceptor",
+    "category": "type",
+    "source_files": ["PredicateFilterInterceptor.java"]
+  },
+  {
+    "uid": "eq-officeqa-test-004",
+    "question": "Which exact API name is used for relation analytics group-join rewriting?",
+    "ground_truth": "subQueryToGroupJoin",
+    "category": "api",
+    "source_files": ["group.md"]
+  },
+  {
+    "uid": "eq-officeqa-test-005",
+    "question": "Which exact method on EasySearchOptionBuilder changes the sort parameter name?",
+    "ground_truth": "setSortParam",
+    "category": "method",
+    "source_files": ["EasySearchOptionBuilder.java"]
+  },
+  {
+    "uid": "eq-officeqa-test-006",
+    "question": "Which exact annotation is used on fields or types to declare EasySearch query metadata?",
+    "ground_truth": "@EasyCond",
+    "category": "annotation",
+    "source_files": ["EasyCond.java"]
+  },
+  {
+    "uid": "eq-officeqa-test-007",
+    "question": "Which EasyCond property restricts allowed query operators for a field?",
+    "ground_truth": "condOnly",
+    "category": "property",
+    "source_files": ["EasyCond.java"]
+  },
+  {
+    "uid": "eq-officeqa-test-008",
+    "question": "Which exact class does SearchInjectConfiguration register as the object-sort executor for EasySearch?",
+    "ground_truth": "EasySearchObjectSortQueryExecutor",
+    "category": "type",
+    "source_files": ["SearchInjectConfiguration.java"]
+  },
+  {
+    "uid": "eq-officeqa-test-009",
+    "question": "Which Spring Boot AOP configuration class wraps public @EasyQueryTrack methods?",
+    "ground_truth": "EasyQueryTrackAopConfiguration",
+    "category": "type",
+    "source_files": ["EasyQueryTrackAopConfiguration.java"]
+  },
+  {
+    "uid": "eq-officeqa-test-010",
+    "question": "Which exact method name on TrackManager returns the current thread tracking context?",
+    "ground_truth": "getCurrentTrackContext",
+    "category": "method",
+    "source_files": ["TrackManager.java", "data-tracking.md"]
+  },
+  {
+    "uid": "eq-officeqa-test-011",
+    "question": "In the Spring Boot multi-datasource guide that uses the annotation approach, which annotation is shown with ds2 as the selected data source?",
+    "ground_truth": "@DS(\"ds2\")",
+    "category": "annotation",
+    "source_files": ["sb-multi-datasource.md"]
+  },
+  {
+    "uid": "eq-officeqa-test-012",
+    "question": "In the baomidou Spring Boot multi-datasource guide, which exact property should be set to false so easy-query does not perform the default build?",
+    "ground_truth": "easy-query.build",
+    "category": "property",
+    "source_files": ["sb-multi-datasource2.md"]
+  }
+]
